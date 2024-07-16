@@ -1,0 +1,53 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+
+steps:
+- task: TerraformInstaller@0
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: '1.6.3'
+    
+
+- checkout: self
+  displayName: 'Checkout repository'
+
+- task: TerraformTaskV2@2
+  displayName: terraform init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(Build.SourcesDirectory)/linux'
+    backendServiceArm: 'azure-connection'
+    backendAzureRmResourceGroupName: 'terraform'
+    backendAzureRmStorageAccountName: 'terraformtxtx'
+    backendAzureRmContainerName: 'terraform'
+    backendAzureRmKey: 'terraform.tfstate'
+
+- task: TerraformTaskV2@2
+  displayName: 'Terraform Validate'
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: '$(Build.SourcesDirectory)/linux'
+    environmentServiceNameAzureRM: 'azure-connection'
+
+- task: TerraformTaskV2@2
+  displayName: 'Terraform Plan'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(Build.SourcesDirectory)/linux'
+    environmentServiceNameAzureRM: 'azure-connection'
+    commandOptions: '-out=tfplan'
+
+- task: TerraformTaskV2@2
+  displayName: 'Terraform Apply'
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(Build.SourcesDirectory)/linux'
+    environmentServiceNameAzureRM: 'azure-connection'
+    commandOptions: '-auto-approve -input=false tfplan'
